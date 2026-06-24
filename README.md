@@ -38,8 +38,6 @@ El objetivo de este laboratorio es **implementar y verificar una VPN Site-to-Sit
 * La habilitación del **enrutamiento dinámico sobre el túnel** mediante OSPF, demostrando la principal ventaja del modelo *route-based* frente al *policy-based*.
 * La validación del túnel VTI mediante comandos de verificación nativos de IOS y la comprobación de conectividad extremo a extremo con `ping` extendido entre hosts.
 
-Este laboratorio se realiza en un entorno controlado con fines **exclusivamente educativos** dentro del curso de Seguridad de Redes del ITLA.
-
 ---
 
 ## 2. Marco Teórico
