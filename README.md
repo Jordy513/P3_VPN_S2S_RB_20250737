@@ -506,9 +506,9 @@ La VTI agrega overhead de IPSec al paquete original. Con AES-256 y SHA-256 en mo
 
 ## 8. Video Demostrativo
 
-🎥 **[Ver demostración en YouTube](#)**
+🎥 **[Ver demostración en YouTube](https://youtu.be/Ly7aYbhaSaY)**
 
-**Duración:** máximo 8 minutos
+**Duración:** 7:10
 
 **Contenido del video:**
 
