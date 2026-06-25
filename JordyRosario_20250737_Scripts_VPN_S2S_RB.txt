@@ -1,0 +1,121 @@
+! ══════════════════════════════════════════════════════
+! R1 — Site A | IPSec Route-Based VPN (VTI)
+! Jordy Rosario — 20250737 | Seguridad de Redes 2026-C-2
+! ══════════════════════════════════════════════════════
+
+hostname R1
+
+! ─── Interfaces físicas ────────────────────────────────
+interface Ethernet0/0
+ description WAN-hacia-ISP
+ ip address 192.168.1.10 255.255.255.0
+ no shutdown
+
+interface Ethernet0/1
+ description LAN-SiteA
+ ip address 20.25.37.129 255.255.255.128
+ no shutdown
+
+! ─── Ruta por defecto hacia Internet (ISP) ─────────────
+ip route 0.0.0.0 0.0.0.0 192.168.1.2
+
+! ─── PASO 1: ISAKMP Policy — IKE Fase 1 ───────────────
+crypto isakmp policy 10
+ encryption aes 256
+ hash sha256
+ authentication pre-share
+ group 14
+ lifetime 86400
+
+! ─── Pre-Shared Key del peer remoto (R2) ───────────────
+crypto isakmp key JordyITLA2026! address 192.168.1.20
+
+! ─── PASO 2: Transform Set — IKE Fase 2 (ESP) ─────────
+crypto ipsec transform-set TS_AES256_SHA256 esp-aes 256 esp-sha256-hmac
+ mode tunnel
+
+! ─── PASO 3: IPSec Profile ─────────────────────────────
+! En route-based NO se usa Crypto Map en la interfaz WAN.
+! En su lugar, el IPSec Profile se aplica directamente a Tunnel0.
+crypto ipsec profile IPSEC_PROFILE_VTI
+ set transform-set TS_AES256_SHA256
+ set security-association lifetime seconds 3600
+
+! ─── PASO 4: Virtual Tunnel Interface (VTI) ────────────
+interface Tunnel0
+ description VPN-Route-Based-hacia-R2
+ ip address 10.25.37.1 255.255.255.252
+ ip mtu 1400
+ ip tcp adjust-mss 1360
+ tunnel source Ethernet0/0
+ tunnel destination 192.168.1.20
+ tunnel mode ipsec ipv4
+ tunnel protection ipsec profile IPSEC_PROFILE_VTI
+ no shutdown
+
+! ─── PASO 5: OSPF — Enrutamiento dinámico sobre el túnel
+! Esta es la ventaja clave del modelo route-based:
+! OSPF corre sobre Tunnel0 y aprende las rutas LAN remotas.
+router ospf 1
+ network 20.25.37.128 0.0.0.127 area 0    ! LAN local Site A
+ network 10.25.37.0 0.0.0.3 area 0        ! Subred del túnel VTI
+ 
+ --------------------------------------------------------------------------------------
+ 
+ ! ══════════════════════════════════════════════════════
+! R2 — Site B | IPSec Route-Based VPN (VTI)
+! Jordy Rosario — 20250737 | Seguridad de Redes 2026-C-2
+! ══════════════════════════════════════════════════════
+
+hostname R2
+
+! ─── Interfaces físicas ────────────────────────────────
+interface Ethernet0/0
+ description WAN-hacia-ISP
+ ip address 192.168.1.20 255.255.255.0
+ no shutdown
+
+interface Ethernet0/1
+ description LAN-SiteB
+ ip address 20.25.37.1 255.255.255.128
+ no shutdown
+
+! ─── Ruta por defecto hacia Internet (ISP) ─────────────
+ip route 0.0.0.0 0.0.0.0 192.168.1.2
+
+! ─── PASO 1: ISAKMP Policy — IKE Fase 1 ───────────────
+crypto isakmp policy 10
+ encryption aes 256
+ hash sha256
+ authentication pre-share
+ group 14
+ lifetime 86400
+
+! ─── Pre-Shared Key del peer remoto (R1) ───────────────
+crypto isakmp key JordyITLA2026! address 192.168.1.10
+
+! ─── PASO 2: Transform Set — IKE Fase 2 (ESP) ─────────
+crypto ipsec transform-set TS_AES256_SHA256 esp-aes 256 esp-sha256-hmac
+ mode tunnel
+
+! ─── PASO 3: IPSec Profile ─────────────────────────────
+crypto ipsec profile IPSEC_PROFILE_VTI
+ set transform-set TS_AES256_SHA256
+ set security-association lifetime seconds 3600
+
+! ─── PASO 4: Virtual Tunnel Interface (VTI) ────────────
+interface Tunnel0
+ description VPN-Route-Based-hacia-R1
+ ip address 10.25.37.2 255.255.255.252
+ ip mtu 1400
+ ip tcp adjust-mss 1360
+ tunnel source Ethernet0/0
+ tunnel destination 192.168.1.10
+ tunnel mode ipsec ipv4
+ tunnel protection ipsec profile IPSEC_PROFILE_VTI
+ no shutdown
+
+! ─── PASO 5: OSPF — Enrutamiento dinámico sobre el túnel
+router ospf 1
+ network 20.25.37.0 0.0.0.127 area 0      ! LAN local Site B
+ network 10.25.37.0 0.0.0.3 area 0        ! Subred del túnel VTI
